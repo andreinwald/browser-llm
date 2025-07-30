@@ -1,52 +1,45 @@
-import {useState, useEffect, useCallback} from "react";
-import {chat, loadLibrary, loadModel} from "./LLM.ts";
-import type {ChatCompletionMessageParam} from "@mlc-ai/web-llm/lib/openai_api_protocols/chat_completion";
+import {useLLM} from "./useLLM.ts";
+import {useEffect, useState} from "preact/hooks";
 
 export function App() {
-    const [status, setStatus] = useState<string>('');
-    const [response, setResponse] = useState<string>('');
+    const {start, status, send, messageHistory} = useLLM();
+    const [hasWebGPU, setHasWebGPU] = useState(true);
+    const [inputValue, setInputValue] = useState('');
 
-    const [alreadyRun, setAlreadyRun] = useState(false);
-
-    const run = useCallback(async () => {
-        if (alreadyRun) {
-            return;
-        }
-        setAlreadyRun(true);
-        setStatus('loading LLM library');
-        await loadLibrary();
-        setStatus('loading model');
-        // List of all models https://mlc.ai/models
-        await loadModel('Llama-3.2-1B-Instruct-q4f16_1-MLC', console.log);
-        setStatus('done');
-        const messages: ChatCompletionMessageParam[] = [
-            {role: "user", content: "Why sky is blue?"},
-        ]
-        const stream = await chat(messages);
-        let full = '';
-        for await (const chunk of stream) {
-            const delta = chunk?.choices?.[0]?.delta?.content ?? "";
-            if (delta) {
-                full += delta;
-                setResponse(full);
-            }
+    useEffect(() => {
+        if (!("gpu" in navigator)) {
+            setHasWebGPU(false);
         }
     }, []);
 
-
     return (
         <>
-            <button onClick={run}>Run</button>
+            {!hasWebGPU && (
+                <div style={{color: 'orange', marginBottom: '10px'}}>
+                    Warning: WebGPU is not available. WebLLM will use WASM fallback (much slower).
+                </div>
+            )}
+            <button onClick={start}>Start</button>
             <br/>
 
             {status}
             <br/>
             <br/>
-            {response}
+            <input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.currentTarget.value)}
+            />
+            <button onClick={() => send(inputValue)}>Send</button>
+            <br/>
+            <br/>
+
+            <div>
+                {messageHistory.map((message, i) => (
+                    <div key={i}>
+                        {message.role}:<br/> {message.content}<br/><br/>
+                    </div>
+                ))}
+            </div>
         </>
     )
 }
-
-// if (!("gpu" in navigator)) {
-//     console.warn("WebGPU not available; WebLLM will try WASM fallback (much slower).");
-// }
