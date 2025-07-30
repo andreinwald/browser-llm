@@ -2,7 +2,7 @@ import {useLLM} from "./useLLM.ts";
 import {useEffect, useState} from "preact/hooks";
 
 export function App() {
-    const {start, status, send, messageHistory} = useLLM();
+    const {downloadModel, status, send, messageHistory} = useLLM();
     const [hasWebGPU, setHasWebGPU] = useState(true);
     const [inputValue, setInputValue] = useState('');
 
@@ -19,7 +19,7 @@ export function App() {
                     Warning: WebGPU is not available. WebLLM will use WASM fallback (much slower).
                 </div>
             )}
-            <button onClick={start}>Start</button>
+            <button onClick={downloadModel}>Download model</button>
             <br/>
 
             {status}

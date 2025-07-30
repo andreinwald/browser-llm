@@ -7,7 +7,7 @@ export function useLLM() {
     const [status, setStatus] = useState<string>('');
     const [alreadyRun, setAlreadyRun] = useState(false);
 
-    const start = useCallback(async () => {
+    const downloadModel = useCallback(async () => {
         if (alreadyRun) {
             return;
         }
@@ -50,5 +50,5 @@ export function useLLM() {
         }
     }, [messageHistory]);
 
-    return {start, status, send, messageHistory};
+    return {downloadModel, status, send, messageHistory};
 }
