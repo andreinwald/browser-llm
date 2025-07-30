@@ -6,5 +6,6 @@ export default defineConfig({
   build: {
     outDir: 'docs'
   },
+  base: 'local-javascript-ai',
   plugins: [preact()],
 })
