@@ -2,23 +2,29 @@ import {useState} from "react";
 import type {ChatCompletionMessageParam} from "@mlc-ai/web-llm/lib/openai_api_protocols/chat_completion";
 import type {MLCEngine} from "@mlc-ai/web-llm";
 
+let libraryCache: any = null;
+
+async function getLibrary() {
+    if (libraryCache) {
+        return libraryCache;
+    }
+    const {CreateMLCEngine} = await import("@mlc-ai/web-llm");
+    return {CreateMLCEngine};
+}
+
+
 export function useLLM() {
     const [messageHistory, setMessageHistory] = useState<ChatCompletionMessageParam[]>([])
     const [downloadStatus, setDownloadStatus] = useState<string>('');
-    const [alreadyRun, setAlreadyRun] = useState(false);
     const [model, setModel] = useState<MLCEngine>();
 
-    async function downloadModel() {
-        if (alreadyRun) {
-            return;
-        }
-        setAlreadyRun(true);
+    async function downloadModel(name: string) {
         setDownloadStatus('loading LLM library');
-        const {CreateMLCEngine} = await import("@mlc-ai/web-llm");
+        const {CreateMLCEngine} = await getLibrary();
         setDownloadStatus('loading model');
         // List of all models https://mlc.ai/models
         const model = await CreateMLCEngine(
-            'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+            name,
             {initProgressCallback: (p: any) => console.log(p?.text ?? p)}
         );
         setModel(model);

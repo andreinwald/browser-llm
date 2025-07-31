@@ -19,7 +19,7 @@ export function App() {
                     Warning: WebGPU is not available. WebLLM will use WASM fallback (much slower).
                 </div>
             )}
-            <button onClick={downloadModel}>Download model</button>
+            <button onClick={() => downloadModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')}>Download model</button>
             <br/>
 
             {downloadStatus}
