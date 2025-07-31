@@ -1,3 +1,3 @@
-# AI
+# LLM in browser via JavaScript and WebGPU
 
-https://andreinwald.github.io/local-javascript-ai/
+https://andreinwald.github.io/browser-llm/
