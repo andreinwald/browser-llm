@@ -1,5 +1,5 @@
 import {useLLM} from "./useLLM.ts";
-import {useEffect, useState} from "preact/hooks";
+import {useEffect, useState} from "react";
 
 export function App() {
     const {downloadModel, status, send, messageHistory} = useLLM();
