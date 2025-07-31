@@ -1,8 +1,9 @@
-import {useLLM} from "./useLLM.ts";
+import {downloadModel, sendPrompt} from "./useLLM.ts";
 import {useEffect, useState} from "react";
+import {useTypedSelector} from "./redux/store.ts";
 
 export function App() {
-    const {downloadModel, downloadStatus, sendPrompt, messageHistory} = useLLM();
+    const {downloadStatus, messageHistory} = useTypedSelector(state => state.llm);
     const [hasWebGPU, setHasWebGPU] = useState(true);
     const [inputValue, setInputValue] = useState('');
 

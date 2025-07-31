@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.79",
-    "preact": "^10.26.9"
+    "@reduxjs/toolkit": "^2.8.2",
+    "preact": "^10.26.9",
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.2",

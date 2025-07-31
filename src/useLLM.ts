@@ -1,6 +1,7 @@
-import {useState} from "react";
 import type {ChatCompletionMessageParam} from "@mlc-ai/web-llm/lib/openai_api_protocols/chat_completion";
 import type {MLCEngine} from "@mlc-ai/web-llm";
+import {setDownloadStatus, setMessageHistory} from "./redux/llmSlice.ts";
+import {dispatch, getState} from "./redux/store.ts";
 
 let libraryCache: any = null;
 
@@ -12,62 +13,53 @@ async function getLibrary() {
     return {CreateMLCEngine};
 }
 
+let model: MLCEngine;
 
-export function useLLM() {
-    const [messageHistory, setMessageHistory] = useState<ChatCompletionMessageParam[]>([])
-    const [downloadStatus, setDownloadStatus] = useState<string>('');
-    const [model, setModel] = useState<MLCEngine>();
+export async function downloadModel(name: string) {
+    dispatch(setDownloadStatus('loading LLM library'));
+    const {CreateMLCEngine} = await getLibrary();
+    dispatch(setDownloadStatus('loading model'));
+    // List of all models https://mlc.ai/models
+    model = await CreateMLCEngine(
+        name,
+        {initProgressCallback: (p: any) => console.log(p?.text ?? p)}
+    );
+    dispatch(setDownloadStatus('done'));
+}
 
-    async function downloadModel(name: string) {
-        setDownloadStatus('loading LLM library');
-        const {CreateMLCEngine} = await getLibrary();
-        setDownloadStatus('loading model');
-        // List of all models https://mlc.ai/models
-        const model = await CreateMLCEngine(
-            name,
-            {initProgressCallback: (p: any) => console.log(p?.text ?? p)}
-        );
-        setModel(model);
-        setDownloadStatus('done');
+export async function sendPrompt(message: string) {
+    const messagesHistory = getState(state => state.llm.messageHistory);
+    const newUserMessage: ChatCompletionMessageParam = {role: 'user', content: message};
+    let updatedHistory = [...messagesHistory, newUserMessage];
+    dispatch(setMessageHistory(updatedHistory));
+
+    if (!model) {
+        throw new Error("Model not loaded");
     }
 
-    async function sendPrompt(message: string) {
-        const newUserMessage: ChatCompletionMessageParam = {role: 'user', content: message};
-        const updatedHistory = [...messageHistory, newUserMessage];
+    const stream = await model.chat.completions.create({
+        messages: updatedHistory,
+        stream: true,
+        max_tokens: 256,
+    });
+    const response: ChatCompletionMessageParam = {
+        role: "assistant",
+        content: ""
+    };
+    updatedHistory = [...updatedHistory, response];
+    dispatch(setMessageHistory(updatedHistory));
 
-        setMessageHistory(updatedHistory);
-
-        if (!model) {
-            throw new Error("Model not loaded");
-        }
-
-        const stream = await model.chat.completions.create({
-            messages: updatedHistory,
-            stream: true,
-            max_tokens: 256,
-        });
-        const response: ChatCompletionMessageParam = {
-            role: "assistant",
-            content: ""
-        };
-        // Add the assistant message to history
-        setMessageHistory(prev => [...prev, response]);
-
-        for await (const chunk of stream) {
-            const delta = chunk?.choices?.[0]?.delta?.content ?? "";
-            if (delta) {
-                setMessageHistory(prev => {
-                    const updated = [...prev];
-                    const lastIndex = updated.length - 1;
-                    updated[lastIndex] = {
-                        ...updated[lastIndex],
-                        content: updated[lastIndex].content + delta
-                    };
-                    return updated;
-                });
-            }
+    for await (const chunk of stream) {
+        const delta = chunk?.choices?.[0]?.delta?.content ?? "";
+        if (delta) {
+            const current = getState(state => state.llm.messageHistory);
+            const updated = [...current];
+            const lastIndex = updated.length - 1;
+            updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: updated[lastIndex].content + delta
+            };
+            dispatch(setMessageHistory(updated));
         }
     }
-
-    return {downloadModel, downloadStatus, sendPrompt, messageHistory};
 }
