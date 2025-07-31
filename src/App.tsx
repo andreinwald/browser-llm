@@ -2,7 +2,7 @@ import {useLLM} from "./useLLM.ts";
 import {useEffect, useState} from "react";
 
 export function App() {
-    const {downloadModel, status, send, messageHistory} = useLLM();
+    const {downloadModel, downloadStatus, sendPrompt, messageHistory} = useLLM();
     const [hasWebGPU, setHasWebGPU] = useState(true);
     const [inputValue, setInputValue] = useState('');
 
@@ -22,14 +22,14 @@ export function App() {
             <button onClick={downloadModel}>Download model</button>
             <br/>
 
-            {status}
+            {downloadStatus}
             <br/>
             <br/>
             <input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.currentTarget.value)}
             />
-            <button onClick={() => send(inputValue)}>Send</button>
+            <button onClick={() => sendPrompt(inputValue)}>Send</button>
             <br/>
             <br/>
 

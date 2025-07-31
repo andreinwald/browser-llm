@@ -4,7 +4,7 @@ import type {MLCEngine} from "@mlc-ai/web-llm";
 
 export function useLLM() {
     const [messageHistory, setMessageHistory] = useState<ChatCompletionMessageParam[]>([])
-    const [status, setStatus] = useState<string>('');
+    const [downloadStatus, setDownloadStatus] = useState<string>('');
     const [alreadyRun, setAlreadyRun] = useState(false);
     const [model, setModel] = useState<MLCEngine>();
 
@@ -13,19 +13,19 @@ export function useLLM() {
             return;
         }
         setAlreadyRun(true);
-        setStatus('loading LLM library');
+        setDownloadStatus('loading LLM library');
         const {CreateMLCEngine} = await import("@mlc-ai/web-llm");
-        setStatus('loading model');
+        setDownloadStatus('loading model');
         // List of all models https://mlc.ai/models
         const model = await CreateMLCEngine(
             'Llama-3.2-1B-Instruct-q4f16_1-MLC',
             {initProgressCallback: (p: any) => console.log(p?.text ?? p)}
         );
         setModel(model);
-        setStatus('done');
+        setDownloadStatus('done');
     }
 
-    async function send(message: string) {
+    async function sendPrompt(message: string) {
         const newUserMessage: ChatCompletionMessageParam = {role: 'user', content: message};
         const updatedHistory = [...messageHistory, newUserMessage];
 
@@ -40,12 +40,12 @@ export function useLLM() {
             stream: true,
             max_tokens: 256,
         });
-        const assistantMessage: ChatCompletionMessageParam = {
+        const response: ChatCompletionMessageParam = {
             role: "assistant",
             content: ""
         };
         // Add the assistant message to history
-        setMessageHistory(prev => [...prev, assistantMessage]);
+        setMessageHistory(prev => [...prev, response]);
 
         for await (const chunk of stream) {
             const delta = chunk?.choices?.[0]?.delta?.content ?? "";
@@ -63,5 +63,5 @@ export function useLLM() {
         }
     }
 
-    return {downloadModel, status, send, messageHistory};
+    return {downloadModel, downloadStatus, sendPrompt, messageHistory};
 }
