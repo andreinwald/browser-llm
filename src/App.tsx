@@ -18,32 +18,24 @@ import {
 import {Send} from "@mui/icons-material";
 import Markdown from "react-markdown";
 
-const darkTheme = createTheme({
-    palette: {
-        mode: 'dark',
-        background: {
-            default: '#333',
-            paper: '#444',
-        },
-        primary: {
-            main: '#90caf9',
-        },
-        secondary: {
-            main: '#f48fb1',
-        },
-    },
-});
-
+const MODEL = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
 
 export function App() {
     const {downloadStatus, messageHistory} = useTypedSelector(state => state.llm);
     const [hasWebGPU, setHasWebGPU] = useState(true);
     const [inputValue, setInputValue] = useState('');
+    const [alreadyDownloaded, setAlreadyDownloaded] = useState(false);
+    const [loadFinished, setLoadFinished] = useState(false);
 
     useEffect(() => {
         if (!("gpu" in navigator)) {
             setHasWebGPU(false);
         }
+        if (localStorage.getItem('downloaded_models')) {
+            setAlreadyDownloaded(true);
+            downloadModel(MODEL).then(() => setLoadFinished(true));
+        }
+
     }, []);
 
     function submitPrompt(e: { preventDefault: () => void; }) {
@@ -56,7 +48,10 @@ export function App() {
         <ThemeProvider theme={darkTheme}>
             <CssBaseline/>
             <AppBar position="static">
-                <Toolbar>
+                <Toolbar sx={{
+                    maxWidth: '1200px !important',
+                    margin: '0 auto',
+                }}>
                     <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
                         BrowserLLM
                     </Typography>
@@ -70,17 +65,19 @@ export function App() {
                 maxWidth: '1200px !important'
             }}>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
-                    <Box sx={{textAlign: 'center', mb: 2}}>
-                        <Button variant="contained" color="primary"
-                                onClick={() => downloadModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')}>Download
-                            Model</Button>
-                    </Box>
+                    {!alreadyDownloaded && !loadFinished && (
+                        <Box sx={{textAlign: 'center', mb: 2}}>
+                            <Button variant="contained" color="primary"
+                                    onClick={() => downloadModel(MODEL).then(() => setLoadFinished(true))}>Download
+                                Model (500MB+)</Button>
+                        </Box>
+                    )}
                     {!hasWebGPU && (
                         <Typography color="error" sx={{mb: 2}}>
                             Warning: WebGPU is not available. WebLLM will use WASM fallback (much slower).
                         </Typography>
                     )}
-                    <Typography>{downloadStatus}</Typography>
+                    <Typography>Loading model: {downloadStatus}</Typography>
                     <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                         {messageHistory.map((message, i) => (
                             <Paper
@@ -103,7 +100,7 @@ export function App() {
                 <Paper component="form" onSubmit={submitPrompt}
                        sx={{
                            p: '2px 4px',
-                           display: 'flex',
+                           display: loadFinished ? 'flex' : 'none',
                            alignItems: 'center',
                            mt: 2,
                            mb: 4,
@@ -128,3 +125,19 @@ export function App() {
         </ThemeProvider>
     )
 }
+
+const darkTheme = createTheme({
+    palette: {
+        mode: 'dark',
+        background: {
+            default: '#333',
+            paper: '#444',
+        },
+        primary: {
+            main: '#90caf9',
+        },
+        secondary: {
+            main: '#f48fb1',
+        },
+    },
+});

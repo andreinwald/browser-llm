@@ -22,12 +22,17 @@ export async function downloadModel(name: string) {
     // List of all models https://mlc.ai/models
     model = await CreateMLCEngine(
         name,
-        {initProgressCallback: (p: any) => console.log(p?.text ?? p)}
+        {initProgressCallback: (p: any) => {
+            if (p?.text) {
+                dispatch(setDownloadStatus(p.text));
+            }
+        }}
     );
     dispatch(setDownloadStatus('done'));
+    localStorage.setItem('downloaded_models', JSON.stringify([name]));
 }
 
-export async function sendPrompt(message: string, maxTokens = 256) {
+export async function sendPrompt(message: string, maxTokens = 1000) {
     const messagesHistory = getState(state => state.llm.messageHistory);
     const newUserMessage: ChatCompletionMessageParam = {role: 'user', content: message};
     let updatedHistory = [...messagesHistory, newUserMessage];

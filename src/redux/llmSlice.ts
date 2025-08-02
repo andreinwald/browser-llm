@@ -8,7 +8,7 @@ type State = {
 
 const initialState: State = {
     messageHistory: [],
-    downloadStatus: '',
+    downloadStatus: 'waiting',
 }
 
 export const llmSlice = createSlice({
