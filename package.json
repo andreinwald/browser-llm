@@ -9,10 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@mlc-ai/web-llm": "^0.2.79",
+    "@mui/icons-material": "^7.2.0",
+    "@mui/material": "^7.2.0",
     "@reduxjs/toolkit": "^2.8.2",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "preact": "^10.26.9",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "react-syntax-highlighter": "^15.6.1"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.2",
