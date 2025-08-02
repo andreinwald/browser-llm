@@ -62,6 +62,7 @@ export function App() {
                 flexDirection: 'column',
                 flexGrow: 1,
                 justifyContent: 'center',
+                paddingBottom: '100px',
                 maxWidth: '1200px !important'
             }}>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
