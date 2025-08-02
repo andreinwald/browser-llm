@@ -5,3 +5,6 @@ WebGPU is already supported in Chrome, Safari, Firefox, iOS (v26) and Android. [
 Demo, similar to ChatGPT https://andreinwald.github.io/browser-llm/
 
 No need to use your OPENAI_KEY - its local model that runs on your device and dont make any network requests.
+
+---
+Hosted on Github Pages (docs folder used as dist)
