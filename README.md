@@ -1,3 +1,4 @@
-# LLM in browser via JavaScript and WebGPU
+# Browser LLM via JavaScript
+WebGPU makes it fast in Chrome, Safari, Firefox, Android and iOS (v26).
 
-https://andreinwald.github.io/browser-llm/
+Demo, similar to ChatGPT https://andreinwald.github.io/browser-llm/
