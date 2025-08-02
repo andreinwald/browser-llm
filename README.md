@@ -1,10 +1,11 @@
 # Browser LLM demo working on JavaScript and WebGPU
 
-WebGPU is already supported in Chrome, Safari, Firefox, iOS (v26) and Android. [source](https://caniuse.com/webgpu)
+WebGPU is already supported in Chrome, Safari, Firefox, iOS (v26) and Android ([check](https://caniuse.com/webgpu))
 
-Demo, similar to ChatGPT https://andreinwald.github.io/browser-llm/
+**Demo, similar to ChatGPT** https://andreinwald.github.io/browser-llm/
 
-No need to use your OPENAI_KEY - its local model that runs on your device and dont make any network requests.
-
----
-Hosted on Github Pages (docs folder used as dist)
+- No need to use your OPENAI_API_KEY - its local model that runs on your device
+- No network requests to any API
+- No need to install any program
+- No need to download files on your device (model is cached in browser)
+- Hosted on Github Pages from this repo - secure, because you see what you are running
