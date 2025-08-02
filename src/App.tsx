@@ -1,4 +1,4 @@
-import {downloadModel, sendPrompt, wrapCode} from "./LLM.ts";
+import {downloadModel, sendPrompt} from "./LLM.ts";
 import {useEffect, useState} from "react";
 import {useTypedSelector} from "./redux/store.ts";
 import {
@@ -16,6 +16,7 @@ import {
     createTheme
 } from "@mui/material";
 import {Send} from "@mui/icons-material";
+import Markdown from "react-markdown";
 
 const darkTheme = createTheme({
     palette: {
@@ -94,7 +95,7 @@ export function App() {
                                 <Typography
                                     variant="body2" sx={{color: 'text.secondary', mb: 0.5}}>{message.role}:</Typography>
                                 {/* @ts-ignore */}
-                                <Typography variant="body1" dangerouslySetInnerHTML={{__html: wrapCode(message.content)}}/>
+                                <Markdown>{message.content}</Markdown>
                             </Paper>
                         ))}
                     </Box>
