@@ -97,17 +97,24 @@ export function App() {
                         ))}
                     </Box>
                 </Box>
-                <Paper component="form" onSubmit={submitPrompt}
-                       sx={{
-                           p: '2px 4px',
-                           display: loadFinished ? 'flex' : 'none',
-                           alignItems: 'center',
-                           mt: 2,
-                           mb: 4,
-                           mx: 'auto',
-                           width: '100%',
-                           maxWidth: '1200px'
-                       }}>
+
+                <Box sx={{
+                    position: messageHistory.length > 0 ? 'fixed' : 'static',
+                    bottom: messageHistory.length > 0 ? 0 : 'auto',
+                    left: 0,
+                    right: 0,
+                    bgcolor: 'background.default',
+                    p: 2,
+                }}>
+                    <Paper component="form" onSubmit={submitPrompt}
+                           sx={{
+                               p: '2px 4px',
+                               display: loadFinished ? 'flex' : 'none',
+                               alignItems: 'center',
+                               mx: 'auto',
+                               width: '100%',
+                               maxWidth: '1200px'
+                           }}>
                     <TextField
                         fullWidth
                         variant="standard"
@@ -121,6 +128,7 @@ export function App() {
                         <Send/>
                     </IconButton>
                 </Paper>
+                </Box>
             </Container>
         </ThemeProvider>
     )
