@@ -15,3 +15,10 @@ HackerNews discussion https://news.ycombinator.com/item?id=44767775
 - Site will ask before downloading large files (llm model) to browser cache
 - Hosted on Github Pages from this repo - secure, because you see what you are running
 - Default model: Llama-3.2-1B
+
+## WebGPU browser and OS compatibility
+<picture>
+  <source type="image/webp" srcset="https://caniuse.bitsofco.de/image/webgpu.webp">
+  <source type="image/png" srcset="https://caniuse.bitsofco.de/image/webgpu.png">
+  <img src="https://caniuse.bitsofco.de/image/webgpu.jpg" alt="Data on support for the webgpu feature across the major browsers from caniuse.com">
+</picture>
