@@ -16,18 +16,24 @@ async function getLibrary() {
 let model: MLCEngine;
 
 export async function downloadModel(name: string) {
-    dispatch(setDownloadStatus('loading LLM library'));
-    const {CreateMLCEngine} = await getLibrary();
-    dispatch(setDownloadStatus('loading model ' + name));
-    // List of all models https://mlc.ai/models
-    model = await CreateMLCEngine(
-        name,
-        {initProgressCallback: (p: any) => {
-            if (p?.text) {
-                dispatch(setDownloadStatus(p.text));
-            }
-        }}
-    );
+    try {
+        dispatch(setDownloadStatus('loading LLM library'));
+        const {CreateMLCEngine} = await getLibrary();
+        dispatch(setDownloadStatus('loading model ' + name));
+        // List of all models https://mlc.ai/models
+        model = await CreateMLCEngine(
+            name,
+            {initProgressCallback: (p: any) => {
+                    if (p?.text) {
+                        dispatch(setDownloadStatus(p.text));
+                    }
+                }}
+        );
+    } catch (error) {
+        console.error(error);
+        dispatch(setDownloadStatus('Error. Please check that WebGPU is enabled https://webgpureport.org'));
+        return;
+    }
     dispatch(setDownloadStatus('done'));
     localStorage.setItem('downloaded_models', JSON.stringify([name]));
 }
