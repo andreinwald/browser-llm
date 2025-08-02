@@ -1,4 +1,4 @@
-import {downloadModel, sendPrompt} from "./LLM.ts";
+import {downloadModel, sendPrompt, wrapCode} from "./LLM.ts";
 import {useEffect, useState} from "react";
 import {useTypedSelector} from "./redux/store.ts";
 import {
@@ -16,7 +16,6 @@ import {
     createTheme
 } from "@mui/material";
 import {Send} from "@mui/icons-material";
-import {CodeBlock} from "./CodeBlock.tsx";
 
 const darkTheme = createTheme({
     palette: {
@@ -34,36 +33,6 @@ const darkTheme = createTheme({
     },
 });
 
-const parseMessage = (message: string) => {
-    const codeBlockRegex = /```(\w*\s*)\n/;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = message.substring(lastIndex).match(codeBlockRegex)) !== null) {
-        const matchIndex = match.index! + lastIndex;
-        if (matchIndex > lastIndex) {
-            parts.push(message.substring(lastIndex, matchIndex));
-        }
-
-        const codeBlock = message.substring(matchIndex + match[0].length);
-        const closingDelimiter = codeBlock.indexOf('```');
-
-        if (closingDelimiter !== -1) {
-            parts.push({code: codeBlock.substring(0, closingDelimiter), language: match[1].trim()});
-            lastIndex = matchIndex + match[0].length + closingDelimiter + 3;
-        } else {
-            parts.push({code: codeBlock, language: match[1].trim()});
-            lastIndex = message.length;
-        }
-    }
-
-    if (lastIndex < message.length) {
-        parts.push(message.substring(lastIndex));
-    }
-
-    return parts;
-};
 
 export function App() {
     const {downloadStatus, messageHistory} = useTypedSelector(state => state.llm);
@@ -92,10 +61,17 @@ export function App() {
                     </Typography>
                 </Toolbar>
             </AppBar>
-            <Container sx={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'center', maxWidth: '1200px !important'}}>
+            <Container sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                flexGrow: 1,
+                justifyContent: 'center',
+                maxWidth: '1200px !important'
+            }}>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
                     <Box sx={{textAlign: 'center', mb: 2}}>
-                        <Button variant="contained" color="primary" onClick={() => downloadModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')}>Download
+                        <Button variant="contained" color="primary"
+                                onClick={() => downloadModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')}>Download
                             Model</Button>
                     </Box>
                     {!hasWebGPU && (
@@ -115,21 +91,25 @@ export function App() {
                                     bgcolor: message.role === 'user' ? 'primary.main' : 'background.paper',
                                 }}
                             >
-                                <Typography variant="body2"
-                                            sx={{color: 'text.secondary', mb: 0.5}}>{message.role}:</Typography>
-                                {parseMessage(message.content).map((part, index) => (
-                                    typeof part === 'string' ? (
-                                        <Typography key={index} variant="body1">{part}</Typography>
-                                    ) : (
-                                        <CodeBlock key={index} code={part.code} language={part.language}/>
-                                    )
-                                ))}
+                                <Typography
+                                    variant="body2" sx={{color: 'text.secondary', mb: 0.5}}>{message.role}:</Typography>
+                                {/* @ts-ignore */}
+                                <Typography variant="body1" dangerouslySetInnerHTML={{__html: wrapCode(message.content)}}/>
                             </Paper>
                         ))}
                     </Box>
                 </Box>
                 <Paper component="form" onSubmit={submitPrompt}
-                       sx={{p: '2px 4px', display: 'flex', alignItems: 'center', mt: 2, mb: 4, mx: 'auto', width: '100%', maxWidth: '1200px'}}>
+                       sx={{
+                           p: '2px 4px',
+                           display: 'flex',
+                           alignItems: 'center',
+                           mt: 2,
+                           mb: 4,
+                           mx: 'auto',
+                           width: '100%',
+                           maxWidth: '1200px'
+                       }}>
                     <TextField
                         fullWidth
                         variant="standard"
