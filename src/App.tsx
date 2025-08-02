@@ -65,6 +65,7 @@ export function App() {
                 paddingBottom: '100px',
                 maxWidth: '1200px !important'
             }}>
+                <h1>Browser LLM demo working on JavaScript and WebGPU</h1>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
                     {!alreadyDownloaded && !loadFinished && (
                         <Box sx={{textAlign: 'center', mb: 2}}>
@@ -116,21 +117,23 @@ export function App() {
                                width: '100%',
                                maxWidth: '1200px'
                            }}>
-                    <TextField
-                        fullWidth
-                        variant="standard"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="Type your message..."
-                        sx={{ml: 1, flex: 1}}
-                        InputProps={{disableUnderline: true}}
-                    />
-                    <IconButton type="submit" sx={{p: '10px'}} aria-label="send">
-                        <Send/>
-                    </IconButton>
-                </Paper>
+                        <TextField
+                            fullWidth
+                            variant="standard"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            placeholder="Type your message..."
+                            sx={{ml: 1, flex: 1}}
+                            InputProps={{disableUnderline: true}}
+                        />
+                        <IconButton type="submit" sx={{p: '10px'}} aria-label="send">
+                            <Send/>
+                        </IconButton>
+                    </Paper>
                 </Box>
             </Container>
+            <a className="github-fork-ribbon" target='_blank' href="https://github.com/andreinwald/browser-llm" data-ribbon="Fork me on GitHub"
+               title="Fork me on GitHub">Fork me on GitHub</a>
         </ThemeProvider>
     )
 }
