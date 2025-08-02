@@ -8,4 +8,5 @@ WebGPU is already supported in Chrome, Safari, Firefox, iOS (v26) and Android ([
 - No network requests to any API
 - No need to install any program
 - No need to download files on your device (model is cached in browser)
+- Site will ask before downloading large files (llm model) to browser cache
 - Hosted on Github Pages from this repo - secure, because you see what you are running
