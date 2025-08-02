@@ -1,4 +1,4 @@
-import {downloadModel, sendPrompt} from "./useLLM.ts";
+import {downloadModel, sendPrompt} from "./LLM.ts";
 import {useEffect, useState} from "react";
 import {useTypedSelector} from "./redux/store.ts";
 
