@@ -18,7 +18,7 @@ let model: MLCEngine;
 export async function downloadModel(name: string) {
     dispatch(setDownloadStatus('loading LLM library'));
     const {CreateMLCEngine} = await getLibrary();
-    dispatch(setDownloadStatus('loading model'));
+    dispatch(setDownloadStatus('loading model ' + name));
     // List of all models https://mlc.ai/models
     model = await CreateMLCEngine(
         name,
