@@ -13,8 +13,14 @@ export function App() {
         }
     }, []);
 
+    function submitPrompt(e: { preventDefault: () => void; }) {
+        e.preventDefault();
+        sendPrompt(inputValue);
+        setInputValue('');
+    }
+
     return (
-        <>
+        <div style={{maxWidth: '1000px', margin: 'auto', padding: '20px'}}>
             {!hasWebGPU && (
                 <div style={{color: 'orange', marginBottom: '10px'}}>
                     Warning: WebGPU is not available. WebLLM will use WASM fallback (much slower).
@@ -26,21 +32,34 @@ export function App() {
             {downloadStatus}
             <br/>
             <br/>
-            <input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.currentTarget.value)}
-            />
-            <button onClick={() => sendPrompt(inputValue)}>Send</button>
             <br/>
             <br/>
 
-            <div>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
                 {messageHistory.map((message, i) => (
-                    <div key={i}>
-                        {message.role}:<br/> {message.content}<br/><br/>
+                    <div key={i} style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
+                        maxWidth: '80%',
+                        alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                        backgroundColor: message.role === 'user' ? '#e3f2fd' : '#f5f5f5',
+                        padding: '10px',
+                        borderRadius: '8px'
+                    }}>
+                        <div style={{fontSize: '0.8em', color: '#666'}}>{message.role}:</div>
+                        <div>{message.content}</div>
                     </div>
                 ))}
             </div>
-        </>
+            <form onSubmit={submitPrompt}>
+                
+                <input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.currentTarget.value)}
+                />
+                <button type='submit'>Send</button>
+            </form>
+        </div>
     )
 }

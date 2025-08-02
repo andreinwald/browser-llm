@@ -27,7 +27,7 @@ export async function downloadModel(name: string) {
     dispatch(setDownloadStatus('done'));
 }
 
-export async function sendPrompt(message: string) {
+export async function sendPrompt(message: string, maxTokens = 256) {
     const messagesHistory = getState(state => state.llm.messageHistory);
     const newUserMessage: ChatCompletionMessageParam = {role: 'user', content: message};
     let updatedHistory = [...messagesHistory, newUserMessage];
@@ -40,7 +40,7 @@ export async function sendPrompt(message: string) {
     const stream = await model.chat.completions.create({
         messages: updatedHistory,
         stream: true,
-        max_tokens: 256,
+        max_tokens: maxTokens,
     });
     const response: ChatCompletionMessageParam = {
         role: "assistant",
