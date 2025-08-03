@@ -89,7 +89,7 @@ export function App() {
             }}>
                 <h1>Browser LLM demo working on JavaScript and WebGPU</h1>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
-                    {!alreadyFromCache && !loadFinished && (
+                    {!alreadyFromCache && !loadFinished  && !criticalError && (
                         <Box sx={{textAlign: 'center', mb: 2}}>
                             <Button variant="contained" color="primary"
                                     onClick={() => downloadModel(MODEL).then(() => setLoadFinished(true))}>Download
