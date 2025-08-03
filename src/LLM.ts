@@ -1,6 +1,6 @@
 import type {ChatCompletionMessageParam} from "@mlc-ai/web-llm/lib/openai_api_protocols/chat_completion";
 import type {MLCEngine} from "@mlc-ai/web-llm";
-import {setDownloadStatus, setMessageHistory} from "./redux/llmSlice.ts";
+import {setDownloadStatus, setMessageHistory, setCriticalError} from "./redux/llmSlice.ts";
 import {dispatch, getState} from "./redux/store.ts";
 
 let libraryCache: any = null;
@@ -32,9 +32,14 @@ export async function downloadModel(name: string) {
                 }
             }
         );
-    } catch (error) {
-        console.error(error);
+    } catch (error: any) {
+        if (error.message) {
+            dispatch(setCriticalError(error.message));
+        } else {
+            dispatch(setCriticalError(JSON.stringify(error)));
+        }
         dispatch(setDownloadStatus('Error. Please check that WebGPU is enabled https://webgpureport.org'));
+        console.error(error);
         return;
     }
     dispatch(setDownloadStatus('done'));

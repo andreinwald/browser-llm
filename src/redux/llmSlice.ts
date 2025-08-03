@@ -3,11 +3,13 @@ import type {ChatCompletionMessageParam} from "@mlc-ai/web-llm/lib/openai_api_pr
 
 type State = {
     messageHistory: ChatCompletionMessageParam[],
+    criticalError: string | false,
     downloadStatus: string,
 }
 
 const initialState: State = {
     messageHistory: [],
+    criticalError: false,
     downloadStatus: 'waiting',
 }
 
@@ -27,8 +29,14 @@ export const llmSlice = createSlice({
         ) => {
             state.downloadStatus = payload;
         },
+        setCriticalError: (
+            state,
+            {payload}: { payload: string }
+        ) => {
+            state.criticalError = payload;
+        },
     },
 })
 
-export const {setMessageHistory, setDownloadStatus} = llmSlice.actions;
+export const {setMessageHistory, setDownloadStatus, setCriticalError} = llmSlice.actions;
 export const llmReducer = llmSlice.reducer;

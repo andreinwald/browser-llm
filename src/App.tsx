@@ -1,6 +1,6 @@
 import {downloadModel, sendPrompt} from "./LLM.ts";
 import {useEffect, useState} from "react";
-import {useTypedSelector} from "./redux/store.ts";
+import {useTypedDispatch, useTypedSelector} from "./redux/store.ts";
 import {
     AppBar,
     Box,
@@ -17,35 +17,36 @@ import {
 } from "@mui/material";
 import {Send} from "@mui/icons-material";
 import Markdown from "react-markdown";
+import {setCriticalError} from "./redux/llmSlice.ts";
 
 const MODEL = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
 const MODEL_SIZE_MB = 664;
 
 export function App() {
-    const {downloadStatus, messageHistory} = useTypedSelector(state => state.llm);
+    const {downloadStatus, messageHistory, criticalError} = useTypedSelector(state => state.llm);
+    const dispatch = useTypedDispatch();
     const [inputValue, setInputValue] = useState('');
     const [alreadyDownloaded, setAlreadyDownloaded] = useState(false);
     const [loadFinished, setLoadFinished] = useState(false);
-    const [criticalError, setCriticalError] = useState<string | false>(false);
 
     useEffect(() => {
         if (!("gpu" in navigator)) {
-            setCriticalError('WebGPU is not available. We will use CPU fallback (much slower)');
+            dispatch(setCriticalError('WebGPU is not available. We will use CPU fallback (much slower)'));
         }
         if (!('caches' in window)) {
-            setCriticalError('Cache API is not supported in your browser');
+            dispatch(setCriticalError('Cache API is not supported in your browser'));
         }
         if (navigator.storage && navigator.storage.estimate) {
             navigator.storage.estimate().then(estimate => {
                 if (estimate) {
                     const remainingMb = (estimate.quota - estimate.usage) / 1024 / 1024;
                     if (!alreadyDownloaded && remainingMb > 10 && remainingMb < MODEL_SIZE_MB) {
-                        setCriticalError('Remaining cache storage, that browser allowed is too low');
+                        dispatch(setCriticalError('Remaining cache storage, that browser allowed is too low'));
                     }
                 }
             });
         } else {
-            setCriticalError('StorageManager API is not supported in your browser');
+            dispatch(setCriticalError('StorageManager API is not supported in your browser'));
         }
 
         if (localStorage.getItem('downloaded_models')) {
@@ -91,10 +92,10 @@ export function App() {
                                 Model ({MODEL_SIZE_MB}MB)</Button>
                         </Box>
                     )}
+                    <Typography>Loading model: {downloadStatus}</Typography>
                     {criticalError && (
                         <Typography color="error" sx={{mb: 2}}>{criticalError}</Typography>
                     )}
-                    <Typography>Loading model: {downloadStatus}</Typography>
                     <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                         {messageHistory.map((message, i) => (
                             <Paper
