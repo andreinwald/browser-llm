@@ -18,6 +18,7 @@ import {
 import {Send} from "@mui/icons-material";
 import Markdown from "react-markdown";
 import {setCriticalError} from "./redux/llmSlice.ts";
+import {isWebGPUok} from "./CheckWebGPU.ts";
 
 const MODEL = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
 const MODEL_SIZE_MB = 664;
@@ -26,13 +27,16 @@ export function App() {
     const {downloadStatus, messageHistory, criticalError} = useTypedSelector(state => state.llm);
     const dispatch = useTypedDispatch();
     const [inputValue, setInputValue] = useState('');
-    const [alreadyDownloaded, setAlreadyDownloaded] = useState(false);
+    const [alreadyFromCache, setAlreadyFromCache] = useState(false);
     const [loadFinished, setLoadFinished] = useState(false);
 
     useEffect(() => {
-        if (!("gpu" in navigator)) {
-            dispatch(setCriticalError('WebGPU is not available. We will use CPU fallback (much slower)'));
-        }
+        isWebGPUok().then(trueOrError => {
+                if (trueOrError !== true) {
+                    dispatch(setCriticalError('WebGPU error: ' + trueOrError));
+                }
+            }
+        )
         if (!('caches' in window)) {
             dispatch(setCriticalError('Cache API is not supported in your browser'));
         }
@@ -40,7 +44,7 @@ export function App() {
             navigator.storage.estimate().then(estimate => {
                 if (estimate) {
                     const remainingMb = (estimate.quota - estimate.usage) / 1024 / 1024;
-                    if (!alreadyDownloaded && remainingMb > 10 && remainingMb < MODEL_SIZE_MB) {
+                    if (!alreadyFromCache && remainingMb > 10 && remainingMb < MODEL_SIZE_MB) {
                         dispatch(setCriticalError('Remaining cache storage, that browser allowed is too low'));
                     }
                 }
@@ -50,7 +54,7 @@ export function App() {
         }
 
         if (localStorage.getItem('downloaded_models')) {
-            setAlreadyDownloaded(true);
+            setAlreadyFromCache(true);
             downloadModel(MODEL).then(() => setLoadFinished(true));
         }
 
@@ -85,7 +89,7 @@ export function App() {
             }}>
                 <h1>Browser LLM demo working on JavaScript and WebGPU</h1>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
-                    {!alreadyDownloaded && !loadFinished && (
+                    {!alreadyFromCache && !loadFinished && (
                         <Box sx={{textAlign: 'center', mb: 2}}>
                             <Button variant="contained" color="primary"
                                     onClick={() => downloadModel(MODEL).then(() => setLoadFinished(true))}>Download
@@ -116,37 +120,39 @@ export function App() {
                     </Box>
                 </Box>
 
-                <Box sx={{
-                    position: messageHistory.length > 0 ? 'fixed' : 'static',
-                    bottom: messageHistory.length > 0 ? 0 : 'auto',
-                    left: 0,
-                    right: 0,
-                    bgcolor: 'background.default',
-                    p: 2,
-                }}>
-                    <Paper component="form" onSubmit={submitPrompt}
-                           sx={{
-                               p: '2px 4px',
-                               display: loadFinished ? 'flex' : 'none',
-                               alignItems: 'center',
-                               mx: 'auto',
-                               width: '100%',
-                               maxWidth: '1200px'
-                           }}>
-                        <TextField
-                            fullWidth
-                            variant="standard"
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            placeholder="Type your message..."
-                            sx={{ml: 1, flex: 1}}
-                            InputProps={{disableUnderline: true}}
-                        />
-                        <IconButton type="submit" sx={{p: '10px'}} aria-label="send">
-                            <Send/>
-                        </IconButton>
-                    </Paper>
-                </Box>
+                {!criticalError && (
+                    <Box sx={{
+                        position: messageHistory.length > 0 ? 'fixed' : 'static',
+                        bottom: messageHistory.length > 0 ? 0 : 'auto',
+                        left: 0,
+                        right: 0,
+                        bgcolor: 'background.default',
+                        p: 2,
+                    }}>
+                        <Paper component="form" onSubmit={submitPrompt}
+                               sx={{
+                                   p: '2px 4px',
+                                   display: loadFinished ? 'flex' : 'none',
+                                   alignItems: 'center',
+                                   mx: 'auto',
+                                   width: '100%',
+                                   maxWidth: '1200px'
+                               }}>
+                            <TextField
+                                fullWidth
+                                variant="standard"
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                placeholder="Type your message..."
+                                sx={{ml: 1, flex: 1}}
+                                InputProps={{disableUnderline: true}}
+                            />
+                            <IconButton type="submit" sx={{p: '10px'}} aria-label="send">
+                                <Send/>
+                            </IconButton>
+                        </Paper>
+                    </Box>
+                )}
             </Container>
             <a className="github-fork-ribbon" target='_blank' href="https://github.com/andreinwald/browser-llm"
                data-ribbon="Fork me on GitHub"
@@ -170,3 +176,4 @@ const darkTheme = createTheme({
         },
     },
 });
+
