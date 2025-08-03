@@ -13,6 +13,10 @@ export async function isWebGPUok(): Promise<true | string> {
         return 'WebGPU Device not available.';
     }
 
+    if (!adapter.features.has('shader-f16')) {
+        return 'WebGPU "shader-f16" feature is NOT supported on this device.';
+    }
+
     // Minimal Compute Shader WGSL code for test
     const shaderCode = `
     @compute @workgroup_size(1)
