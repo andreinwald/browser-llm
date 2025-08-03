@@ -16,6 +16,7 @@ async function getLibrary() {
 let model: MLCEngine;
 
 export async function downloadModel(name: string) {
+
     try {
         dispatch(setDownloadStatus('loading LLM library'));
         const {CreateMLCEngine} = await getLibrary();
@@ -23,11 +24,13 @@ export async function downloadModel(name: string) {
         // List of all models https://mlc.ai/models
         model = await CreateMLCEngine(
             name,
-            {initProgressCallback: (p: any) => {
+            {
+                initProgressCallback: (p: any) => {
                     if (p?.text) {
                         dispatch(setDownloadStatus(p.text));
                     }
-                }}
+                }
+            }
         );
     } catch (error) {
         console.error(error);
