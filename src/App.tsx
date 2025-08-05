@@ -7,8 +7,12 @@ import {
     Button,
     Container,
     CssBaseline,
+    FormControl,
     IconButton,
+    InputLabel,
+    MenuItem,
     Paper,
+    Select,
     TextField,
     ThemeProvider,
     Toolbar,
@@ -17,16 +21,24 @@ import {
 } from "@mui/material";
 import {Send} from "@mui/icons-material";
 import Markdown from "react-markdown";
-import {setCriticalError} from "./redux/llmSlice.ts";
+import {setCriticalError, setMessageHistory} from "./redux/llmSlice.ts";
 import {isWebGPUok} from "./CheckWebGPU.ts";
 
-const MODEL = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
+const models = [
+    'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+    'Phi-3-mini-128k-instruct-q4f16_1-MLC',
+    'Mistral-7B-Instruct-v0.3-q4f16_1-MLC',
+    'gemma-2-2b-it-q4f16_1-MLC',
+    'Qwen2-1.5B-Instruct-q4f16_1-MLC',
+];
+
 const MODEL_SIZE_MB = 664;
 
 export function App() {
     const {downloadStatus, messageHistory, criticalError} = useTypedSelector(state => state.llm);
     const dispatch = useTypedDispatch();
     const [inputValue, setInputValue] = useState('');
+    const [selectedModel, setSelectedModel] = useState(models[0]);
     const [alreadyFromCache, setAlreadyFromCache] = useState(false);
     const [loadFinished, setLoadFinished] = useState(false);
 
@@ -42,7 +54,7 @@ export function App() {
         }
         if (navigator.storage && navigator.storage.estimate) {
             navigator.storage.estimate().then(estimate => {
-                if (estimate) {
+                if (estimate && estimate.quota && estimate.usage) {
                     const remainingMb = (estimate.quota - estimate.usage) / 1024 / 1024;
                     if (!alreadyFromCache && remainingMb > 10 && remainingMb < MODEL_SIZE_MB) {
                         dispatch(setCriticalError('Remaining cache storage, that browser allowed is too low'));
@@ -52,13 +64,23 @@ export function App() {
         } else {
             dispatch(setCriticalError('StorageManager API is not supported in your browser'));
         }
+    }, [dispatch]);
 
-        if (localStorage.getItem('downloaded_models')) {
-            setAlreadyFromCache(true);
-            downloadModel(MODEL).then(() => setLoadFinished(true));
+    useEffect(() => {
+        setLoadFinished(false);
+        const downloadedModelsJson = localStorage.getItem('downloaded_models');
+        if (downloadedModelsJson) {
+            const downloadedModels = JSON.parse(downloadedModelsJson);
+            if (downloadedModels.includes(selectedModel)) {
+                setAlreadyFromCache(true);
+                downloadModel(selectedModel).then(() => setLoadFinished(true));
+            } else {
+                setAlreadyFromCache(false);
+            }
+        } else {
+            setAlreadyFromCache(false);
         }
-
-    }, []);
+    }, [selectedModel, dispatch]);
 
     function submitPrompt(e: { preventDefault: () => void; }) {
         e.preventDefault();
@@ -89,10 +111,27 @@ export function App() {
             }}>
                 <h1>Browser LLM demo working on JavaScript and WebGPU</h1>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
-                    {!alreadyFromCache && !loadFinished  && !criticalError && (
+                    {!alreadyFromCache && !loadFinished && !criticalError && (
                         <Box sx={{textAlign: 'center', mb: 2}}>
+                            <FormControl sx={{m: 1, minWidth: 220}}>
+                                <InputLabel id="demo-simple-select-helper-label">Model</InputLabel>
+                                <Select
+                                    labelId="demo-simple-select-helper-label"
+                                    id="demo-simple-select-helper"
+                                    value={selectedModel}
+                                    label="Model"
+                                    onChange={(e) => {
+                                        setSelectedModel(e.target.value);
+                                        dispatch(setMessageHistory([]));
+                                    }}
+                                >
+                                    {models.map(model => (
+                                        <MenuItem key={model} value={model}>{model}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                             <Button variant="contained" color="primary"
-                                    onClick={() => downloadModel(MODEL).then(() => setLoadFinished(true))}>Download
+                                    onClick={() => downloadModel(selectedModel).then(() => setLoadFinished(true))}>Download
                                 Model ({MODEL_SIZE_MB}MB)</Button>
                         </Box>
                     )}
