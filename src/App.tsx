@@ -1,6 +1,8 @@
-import {downloadModel, sendPrompt} from "./LLM.ts";
+import {downloadModel, interrupt, sendPrompt} from "./LLM.ts";
 import {useEffect, useState} from "react";
 import {useTypedDispatch, useTypedSelector} from "./redux/store.ts";
+import {getCompatibleModels} from "./huggingface.ts";
+import {setModels} from "./redux/llmSlice.ts";
 import {
     AppBar,
     Box,
@@ -19,18 +21,21 @@ import {Send} from "@mui/icons-material";
 import Markdown from "react-markdown";
 import {setCriticalError} from "./redux/llmSlice.ts";
 import {isWebGPUok} from "./CheckWebGPU.ts";
-
-const MODEL = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
-const MODEL_SIZE_MB = 664;
+import {DOWNLOADED_MODELS_KEY} from "./constants.ts";
+import {ModelSelector} from "./ModelSelector.tsx";
 
 export function App() {
-    const {downloadStatus, messageHistory, criticalError} = useTypedSelector(state => state.llm);
+    const {downloadStatus, messageHistory, criticalError, isGenerating, selectedModel} = useTypedSelector(state => state.llm);
     const dispatch = useTypedDispatch();
     const [inputValue, setInputValue] = useState('');
     const [alreadyFromCache, setAlreadyFromCache] = useState(false);
     const [loadFinished, setLoadFinished] = useState(false);
 
     useEffect(() => {
+        getCompatibleModels().then(models => {
+            dispatch(setModels(models));
+        });
+
         isWebGPUok().then(trueOrError => {
                 if (trueOrError !== true) {
                     dispatch(setCriticalError('WebGPU error: ' + trueOrError));
@@ -44,18 +49,18 @@ export function App() {
             navigator.storage.estimate().then(estimate => {
                 if (estimate) {
                     const remainingMb = (estimate.quota - estimate.usage) / 1024 / 1024;
-                    if (!alreadyFromCache && remainingMb > 10 && remainingMb < MODEL_SIZE_MB) {
-                        dispatch(setCriticalError('Remaining cache storage, that browser allowed is too low'));
-                    }
+                    // if (!alreadyFromCache && remainingMb > 10 && remainingMb < MODEL_SIZE_MB) {
+                    //     dispatch(setCriticalError('Remaining cache storage, that browser allowed is too low'));
+                    // }
                 }
             });
         } else {
             dispatch(setCriticalError('StorageManager API is not supported in your browser'));
         }
 
-        if (localStorage.getItem('downloaded_models')) {
+        if (localStorage.getItem(DOWNLOADED_MODELS_KEY)) {
             setAlreadyFromCache(true);
-            downloadModel(MODEL).then(() => setLoadFinished(true));
+            downloadModel(selectedModel).then(() => setLoadFinished(true));
         }
 
     }, []);
@@ -90,10 +95,11 @@ export function App() {
                 <h1>Browser LLM demo working on JavaScript and WebGPU</h1>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
                     {!alreadyFromCache && !loadFinished  && !criticalError && (
-                        <Box sx={{textAlign: 'center', mb: 2}}>
+                        <Box sx={{textAlign: 'center', mb: 2, display: 'flex', flexDirection: 'column', gap: 2}}>
+                            <ModelSelector/>
                             <Button variant="contained" color="primary"
-                                    onClick={() => downloadModel(MODEL).then(() => setLoadFinished(true))}>Download
-                                Model ({MODEL_SIZE_MB}MB)</Button>
+                                    onClick={() => downloadModel(selectedModel).then(() => setLoadFinished(true))}>Download
+                                Model</Button>
                         </Box>
                     )}
                     <Typography>Loading model: {downloadStatus}</Typography>
@@ -113,8 +119,7 @@ export function App() {
                             >
                                 <Typography
                                     variant="body2" sx={{color: 'text.secondary', mb: 0.5}}>{message.role}:</Typography>
-                                {/* @ts-ignore */}
-                                <Markdown>{message.content}</Markdown>
+                                <Markdown>{message.content || ''}</Markdown>
                             </Paper>
                         ))}
                     </Box>
@@ -147,10 +152,15 @@ export function App() {
                                 sx={{ml: 1, flex: 1}}
                                 InputProps={{disableUnderline: true}}
                             />
-                            <IconButton type="submit" sx={{p: '10px'}} aria-label="send">
-                                <Send/>
-                            </IconButton>
+                            {isGenerating ? (
+                                <Button onClick={() => interrupt()}>Stop</Button>
+                            ) : (
+                                <IconButton type="submit" sx={{p: '10px'}} aria-label="send" disabled={!inputValue}>
+                                    <Send/>
+                                </IconButton>
+                            )}
                         </Paper>
+                        {isGenerating && <Typography sx={{textAlign: 'center', mt: 1}}>Generating response...</Typography>}
                     </Box>
                 )}
             </Container>
