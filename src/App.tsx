@@ -1,4 +1,4 @@
-import {downloadModel, sendPrompt} from "./LLM.ts";
+import {downloadModel, interrupt, sendPrompt} from "./LLM.ts";
 import {useEffect, useState} from "react";
 import {useTypedDispatch, useTypedSelector} from "./redux/store.ts";
 import {
@@ -19,12 +19,10 @@ import {Send} from "@mui/icons-material";
 import Markdown from "react-markdown";
 import {setCriticalError} from "./redux/llmSlice.ts";
 import {isWebGPUok} from "./CheckWebGPU.ts";
-
-const MODEL = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
-const MODEL_SIZE_MB = 664;
+import {DOWNLOADED_MODELS_KEY, MODEL, MODEL_SIZE_MB} from "./constants.ts";
 
 export function App() {
-    const {downloadStatus, messageHistory, criticalError} = useTypedSelector(state => state.llm);
+    const {downloadStatus, messageHistory, criticalError, isGenerating} = useTypedSelector(state => state.llm);
     const dispatch = useTypedDispatch();
     const [inputValue, setInputValue] = useState('');
     const [alreadyFromCache, setAlreadyFromCache] = useState(false);
@@ -53,7 +51,7 @@ export function App() {
             dispatch(setCriticalError('StorageManager API is not supported in your browser'));
         }
 
-        if (localStorage.getItem('downloaded_models')) {
+        if (localStorage.getItem(DOWNLOADED_MODELS_KEY)) {
             setAlreadyFromCache(true);
             downloadModel(MODEL).then(() => setLoadFinished(true));
         }
@@ -113,8 +111,7 @@ export function App() {
                             >
                                 <Typography
                                     variant="body2" sx={{color: 'text.secondary', mb: 0.5}}>{message.role}:</Typography>
-                                {/* @ts-ignore */}
-                                <Markdown>{message.content}</Markdown>
+                                <Markdown>{message.content || ''}</Markdown>
                             </Paper>
                         ))}
                     </Box>
@@ -147,10 +144,15 @@ export function App() {
                                 sx={{ml: 1, flex: 1}}
                                 InputProps={{disableUnderline: true}}
                             />
-                            <IconButton type="submit" sx={{p: '10px'}} aria-label="send">
-                                <Send/>
-                            </IconButton>
+                            {isGenerating ? (
+                                <Button onClick={() => interrupt()}>Stop</Button>
+                            ) : (
+                                <IconButton type="submit" sx={{p: '10px'}} aria-label="send" disabled={!inputValue}>
+                                    <Send/>
+                                </IconButton>
+                            )}
                         </Paper>
+                        {isGenerating && <Typography sx={{textAlign: 'center', mt: 1}}>Generating response...</Typography>}
                     </Box>
                 )}
             </Container>
