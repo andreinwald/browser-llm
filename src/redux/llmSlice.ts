@@ -1,11 +1,14 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit'
 import type {ChatCompletionMessageParam} from "@mlc-ai/web-llm/lib/openai_api_protocols/chat_completion";
+import {ModelEntry} from "@huggingface/hub";
 
 type State = {
     messageHistory: ChatCompletionMessageParam[],
     criticalError: string | false,
     downloadStatus: string,
     isGenerating: boolean,
+    models: ModelEntry[],
+    selectedModel: string,
 }
 
 const initialState: State = {
@@ -13,6 +16,8 @@ const initialState: State = {
     criticalError: false,
     downloadStatus: 'waiting',
     isGenerating: false,
+    models: [],
+    selectedModel: '',
 }
 
 export const llmSlice = createSlice({
@@ -45,6 +50,15 @@ export const llmSlice = createSlice({
         },
         setIsGenerating: (state, action: PayloadAction<boolean>) => {
             state.isGenerating = action.payload;
+        },
+        setModels: (state, action: PayloadAction<ModelEntry[]>) => {
+            state.models = action.payload;
+            if (action.payload.length > 0 && !state.selectedModel) {
+                state.selectedModel = action.payload[0].id;
+            }
+        },
+        setSelectedModel: (state, action: PayloadAction<string>) => {
+            state.selectedModel = action.payload;
         }
     },
 })
@@ -55,6 +69,8 @@ export const {
     updateLastBotMessageContent,
     setDownloadStatus,
     setCriticalError,
-    setIsGenerating
+    setIsGenerating,
+    setModels,
+    setSelectedModel
 } = llmSlice.actions;
 export const llmReducer = llmSlice.reducer;

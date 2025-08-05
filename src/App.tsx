@@ -1,6 +1,8 @@
 import {downloadModel, interrupt, sendPrompt} from "./LLM.ts";
 import {useEffect, useState} from "react";
 import {useTypedDispatch, useTypedSelector} from "./redux/store.ts";
+import {getCompatibleModels} from "./huggingface.ts";
+import {setModels} from "./redux/llmSlice.ts";
 import {
     AppBar,
     Box,
@@ -19,16 +21,21 @@ import {Send} from "@mui/icons-material";
 import Markdown from "react-markdown";
 import {setCriticalError} from "./redux/llmSlice.ts";
 import {isWebGPUok} from "./CheckWebGPU.ts";
-import {DOWNLOADED_MODELS_KEY, MODEL, MODEL_SIZE_MB} from "./constants.ts";
+import {DOWNLOADED_MODELS_KEY} from "./constants.ts";
+import {ModelSelector} from "./ModelSelector.tsx";
 
 export function App() {
-    const {downloadStatus, messageHistory, criticalError, isGenerating} = useTypedSelector(state => state.llm);
+    const {downloadStatus, messageHistory, criticalError, isGenerating, selectedModel} = useTypedSelector(state => state.llm);
     const dispatch = useTypedDispatch();
     const [inputValue, setInputValue] = useState('');
     const [alreadyFromCache, setAlreadyFromCache] = useState(false);
     const [loadFinished, setLoadFinished] = useState(false);
 
     useEffect(() => {
+        getCompatibleModels().then(models => {
+            dispatch(setModels(models));
+        });
+
         isWebGPUok().then(trueOrError => {
                 if (trueOrError !== true) {
                     dispatch(setCriticalError('WebGPU error: ' + trueOrError));
@@ -42,9 +49,9 @@ export function App() {
             navigator.storage.estimate().then(estimate => {
                 if (estimate) {
                     const remainingMb = (estimate.quota - estimate.usage) / 1024 / 1024;
-                    if (!alreadyFromCache && remainingMb > 10 && remainingMb < MODEL_SIZE_MB) {
-                        dispatch(setCriticalError('Remaining cache storage, that browser allowed is too low'));
-                    }
+                    // if (!alreadyFromCache && remainingMb > 10 && remainingMb < MODEL_SIZE_MB) {
+                    //     dispatch(setCriticalError('Remaining cache storage, that browser allowed is too low'));
+                    // }
                 }
             });
         } else {
@@ -53,7 +60,7 @@ export function App() {
 
         if (localStorage.getItem(DOWNLOADED_MODELS_KEY)) {
             setAlreadyFromCache(true);
-            downloadModel(MODEL).then(() => setLoadFinished(true));
+            downloadModel(selectedModel).then(() => setLoadFinished(true));
         }
 
     }, []);
@@ -88,10 +95,11 @@ export function App() {
                 <h1>Browser LLM demo working on JavaScript and WebGPU</h1>
                 <Box sx={{flexGrow: 1, overflowY: 'auto', py: 2}}>
                     {!alreadyFromCache && !loadFinished  && !criticalError && (
-                        <Box sx={{textAlign: 'center', mb: 2}}>
+                        <Box sx={{textAlign: 'center', mb: 2, display: 'flex', flexDirection: 'column', gap: 2}}>
+                            <ModelSelector/>
                             <Button variant="contained" color="primary"
-                                    onClick={() => downloadModel(MODEL).then(() => setLoadFinished(true))}>Download
-                                Model ({MODEL_SIZE_MB}MB)</Button>
+                                    onClick={() => downloadModel(selectedModel).then(() => setLoadFinished(true))}>Download
+                                Model</Button>
                         </Box>
                     )}
                     <Typography>Loading model: {downloadStatus}</Typography>
