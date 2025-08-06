@@ -1,84 +1,66 @@
-import type {ChatCompletionMessageParam} from "@mlc-ai/web-llm/lib/openai_api_protocols/chat_completion";
-import type {MLCEngine} from "@mlc-ai/web-llm";
-import {setDownloadStatus, setMessageHistory, setCriticalError} from "./redux/llmSlice.ts";
-import {dispatch, getState} from "./redux/store.ts";
+import type { ChatCompletionMessageParam } from '@mlc-ai/web-llm/lib/openai_api_protocols/chat_completion'
+import type { MLCEngine, InitProgressReport, MLCEngineConfig } from '@mlc-ai/web-llm'
 
-let libraryCache: any = null;
+let libraryCache: ((name: string, options?: MLCEngineConfig) => Promise<MLCEngine>) | null = null;
 
 async function getLibrary() {
-    if (libraryCache) {
-        return libraryCache;
-    }
-    const {CreateMLCEngine} = await import("@mlc-ai/web-llm");
-    return {CreateMLCEngine};
+  if (libraryCache) {
+    return libraryCache
+  }
+  const { CreateMLCEngine } = await import('@mlc-ai/web-llm')
+  libraryCache = CreateMLCEngine
+  return libraryCache
 }
 
-let model: MLCEngine;
-
-export async function downloadModel(name: string) {
-
-    try {
-        dispatch(setDownloadStatus('loading LLM library'));
-        const {CreateMLCEngine} = await getLibrary();
-        dispatch(setDownloadStatus('loading model ' + name));
-        // List of all models https://mlc.ai/models
-        model = await CreateMLCEngine(
-            name,
-            {
-                initProgressCallback: (p: any) => {
-                    if (p?.text) {
-                        dispatch(setDownloadStatus(p.text));
-                    }
-                }
-            }
-        );
-    } catch (error: any) {
-        if (error.message) {
-            dispatch(setCriticalError(error.message));
-        } else {
-            dispatch(setCriticalError(JSON.stringify(error)));
-        }
-        dispatch(setDownloadStatus('Error. Please check that WebGPU is enabled https://webgpureport.org'));
-        console.error(error);
-        return;
+export async function downloadModel(
+  name: string,
+  progressCallback: (report: InitProgressReport) => void
+): Promise<MLCEngine> {
+    const CreateMLCEngine = await getLibrary();
+    if (!CreateMLCEngine) {
+        throw new Error("Could not load MLCEngine");
     }
-    dispatch(setDownloadStatus('done'));
-    localStorage.setItem('downloaded_models', JSON.stringify([name]));
+  const model = await CreateMLCEngine(name, {
+    initProgressCallback: progressCallback,
+  })
+  localStorage.setItem('downloaded_models', JSON.stringify([name]))
+  return model
 }
 
-export async function sendPrompt(message: string, maxTokens = 1000) {
-    const messagesHistory = getState(state => state.llm.messageHistory);
-    const newUserMessage: ChatCompletionMessageParam = {role: 'user', content: message};
-    let updatedHistory = [...messagesHistory, newUserMessage];
-    dispatch(setMessageHistory(updatedHistory));
+export async function* sendPrompt(
+  model: MLCEngine,
+  messages: ChatCompletionMessageParam[],
+  message: string,
+  maxTokens = 1000
+) {
+  if (!model) {
+    throw new Error('Model not loaded')
+  }
 
-    if (!model) {
-        throw new Error("Model not loaded");
+  const newUserMessage: ChatCompletionMessageParam = {
+    role: 'user',
+    content: message,
+  }
+  const history = [...messages, newUserMessage]
+  yield { history }
+
+  const stream = await model.chat.completions.create({
+    messages: history,
+    stream: true,
+    max_tokens: maxTokens,
+  })
+
+  const response: ChatCompletionMessageParam = {
+    role: 'assistant',
+    content: '',
+  }
+  const finalHistory = [...history, response]
+  yield { history: finalHistory }
+
+  for await (const chunk of stream) {
+    const delta = chunk?.choices?.[0]?.delta?.content ?? ''
+    if (delta) {
+      yield { delta }
     }
-
-    const stream = await model.chat.completions.create({
-        messages: updatedHistory,
-        stream: true,
-        max_tokens: maxTokens,
-    });
-    const response: ChatCompletionMessageParam = {
-        role: "assistant",
-        content: ""
-    };
-    updatedHistory = [...updatedHistory, response];
-    dispatch(setMessageHistory(updatedHistory));
-
-    for await (const chunk of stream) {
-        const delta = chunk?.choices?.[0]?.delta?.content ?? "";
-        if (delta) {
-            const current = getState(state => state.llm.messageHistory);
-            const updated = [...current];
-            const lastIndex = updated.length - 1;
-            updated[lastIndex] = {
-                ...updated[lastIndex],
-                content: updated[lastIndex].content + delta
-            };
-            dispatch(setMessageHistory(updated));
-        }
-    }
+  }
 }
