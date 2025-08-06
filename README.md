@@ -17,6 +17,7 @@ HackerNews discussion: https://news.ycombinator.com/item?id=44767775
 - Default model: Llama-3.2-1B
 
 ## WebGPU Browser and OS Compatibility
+
 <picture>
   <source type="image/webp" srcset="https://caniuse.bitsofco.de/image/webgpu.webp">
   <source type="image/png" srcset="https://caniuse.bitsofco.de/image/webgpu.png">
