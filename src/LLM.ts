@@ -1,7 +1,15 @@
 import type {ChatCompletionMessageParam} from "@mlc-ai/web-llm/lib/openai_api_protocols/chat_completion";
 import type {MLCEngine} from "@mlc-ai/web-llm";
-import {setDownloadStatus, setMessageHistory, setCriticalError} from "./redux/llmSlice.ts";
+import {
+    setDownloadStatus,
+    setCriticalError,
+    addUserMessage,
+    addBotMessage,
+    updateLastBotMessageContent,
+    setIsGenerating
+} from "./redux/llmSlice.ts";
 import {dispatch, getState} from "./redux/store.ts";
+import {DOWNLOADED_MODELS_KEY} from "./constants.ts";
 
 let libraryCache: any = null;
 
@@ -42,43 +50,51 @@ export async function downloadModel(name: string) {
         console.error(error);
         return;
     }
+
     dispatch(setDownloadStatus('done'));
-    localStorage.setItem('downloaded_models', JSON.stringify([name]));
+    localStorage.setItem(DOWNLOADED_MODELS_KEY, JSON.stringify([name]));
 }
 
 export async function sendPrompt(message: string, maxTokens = 1000) {
-    const messagesHistory = getState(state => state.llm.messageHistory);
-    const newUserMessage: ChatCompletionMessageParam = {role: 'user', content: message};
-    let updatedHistory = [...messagesHistory, newUserMessage];
-    dispatch(setMessageHistory(updatedHistory));
-
     if (!model) {
         throw new Error("Model not loaded");
     }
 
-    const stream = await model.chat.completions.create({
-        messages: updatedHistory,
-        stream: true,
-        max_tokens: maxTokens,
-    });
-    const response: ChatCompletionMessageParam = {
-        role: "assistant",
-        content: ""
-    };
-    updatedHistory = [...updatedHistory, response];
-    dispatch(setMessageHistory(updatedHistory));
+    dispatch(setIsGenerating(true));
 
-    for await (const chunk of stream) {
-        const delta = chunk?.choices?.[0]?.delta?.content ?? "";
-        if (delta) {
-            const current = getState(state => state.llm.messageHistory);
-            const updated = [...current];
-            const lastIndex = updated.length - 1;
-            updated[lastIndex] = {
-                ...updated[lastIndex],
-                content: updated[lastIndex].content + delta
-            };
-            dispatch(setMessageHistory(updated));
+    const newUserMessage: ChatCompletionMessageParam = {role: 'user', content: message};
+    dispatch(addUserMessage(newUserMessage));
+
+    const messagesHistory = getState().llm.messageHistory;
+
+    try {
+        const stream = await model.chat.completions.create({
+            messages: messagesHistory,
+            stream: true,
+            max_tokens: maxTokens,
+        });
+
+        const botMessage: ChatCompletionMessageParam = {
+            role: "assistant",
+            content: ""
+        };
+        dispatch(addBotMessage(botMessage));
+
+        for await (const chunk of stream) {
+            const delta = chunk?.choices?.[0]?.delta?.content ?? "";
+            if (delta) {
+                dispatch(updateLastBotMessageContent(delta));
+            }
         }
+    } catch (e) {
+        console.error(e)
+    } finally {
+        dispatch(setIsGenerating(false));
+    }
+}
+
+export function interrupt() {
+    if (model) {
+        model.interrupt();
     }
 }
